@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-const ngrok = require('ngrok');
+//const ngrok = require('ngrok');
 const http = require('http');
 const url = require('url');
 const crypto = require('crypto');
@@ -252,7 +252,7 @@ class Autohook extends EventEmitter {
     
     if (!webhookUrl) {
       this.startServer();
-      const url = await ngrok.connect(this.port);
+      //const url = await ngrok.connect(this.port);
       webhookUrl = `${url}${WEBHOOK_ROUTE}`;      
     }
     
