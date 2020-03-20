@@ -229,11 +229,11 @@ class Autohook extends EventEmitter {
   }
 
   startServer() {
-    this.server = http.createServer(this._middleware).listen(this.port);
+    this.server = http.createServer(this._middleware.bind(this)).listen(this.port);
   }
 
   setRouter(router) {
-    router.use(this._middleware);
+    router.use(this._middleware.bind(this));
   }
   
   async removeWebhooks() {
