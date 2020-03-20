@@ -201,39 +201,46 @@ class Autohook extends EventEmitter {
     this.headers = headers;
   }
   
-  _middleware(req, res) {
-    console.log(req.url)
-    const route = url.parse(req.url, true);
+  _middleware(action = function(){console.error('action is not defined!!')}) {
+    return (req, res, next) => {
+      console.log(req.url)
+      const route = url.parse(req.url, true);
+  
+      if (!route.pathname) {
+        return;
+      }
+  
+      if (route.query.crc_token) {
+        const crc = validateWebhook(route.query.crc_token, this.auth);
+        res.writeHead(200, {'content-type': 'application/json'});
+        res.end(JSON.stringify(crc));
+      }
 
-    if (!route.pathname) {
-      return;
-    }
-
-    if (route.query.crc_token) {
-      const crc = validateWebhook(route.query.crc_token, this.auth);
-      res.writeHead(200, {'content-type': 'application/json'});
-      res.end(JSON.stringify(crc));
-    }
-
-    if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
-      let body = '';
-      req.on('data', chunk => {
-        body += chunk.toString();
-      });
-      req.on('end', () => {
-        this.emit('event', JSON.parse(body), req);
-        res.writeHead(200);
-        res.end();
-      });
+      action(req, res, next);
+      
     }
   }
 
   startServer() {
-    this.server = http.createServer(this._middleware.bind(this)).listen(this.port);
+    this.server = http.createServer(this._middleware((req, res) => {
+      if (req.method === 'POST' && req.headers['content-type'] === 'application/json') {
+        let body = '';
+        req.on('data', chunk => {
+          body += chunk.toString();
+        });
+        req.on('end', () => {
+          this.emit('event', JSON.parse(body), req);
+          res.writeHead(200);
+          res.end();
+        });
+      }
+    })).listen(this.port);
   }
 
   setRouter(router) {
-    router.use(this._middleware.bind(this));
+    router.use(this._middleware((req, res) => {
+      this.emit('event', req.body, req);
+    }));
   }
   
   async removeWebhooks() {
